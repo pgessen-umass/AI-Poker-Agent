@@ -12,7 +12,7 @@ def get_maximal_Q(session: QSession, s_prime):
     action_Qs = np.zeros(len(actions))
 
     for i, a in enumerate(actions):
-        action_Qs[i] = session.forward_no_grad(session.encode(s_prime, a))
+        action_Qs[i] = session.get_Q(session.encode(s_prime, a))
 
     return action_Qs.max()
 
@@ -39,7 +39,7 @@ class QSession:
         self.gamma = 0.9
 
     # Somehow encodes a state and action into a tensor
-    def encode(self, state, action) -> torch.Tensor:
+    def encode(self, state, action, reward, s_prime) -> torch.Tensor:
         pass
 
     # Set this to a reasonable loss function
@@ -60,20 +60,20 @@ class QSession:
         samples = np.random.randint(0,len(self.replay_buffer), size=batch_size)
 
         for i in samples:
-            self.explore(*self.replay_buffer[i], new=False)
+            self.train(*self.replay_buffer[i], new=False)
 
     # Updates network based on single step. 
-    def explore(self, state, action, reward, s_prime, new = True) -> torch.Tensor :
+    def train(self, state, action, reward, s_prime, new = True) -> torch.Tensor :
 
         if(new): self.register_in_buffer(state, action, reward, s_prime)
 
-        input_encoded = session.encode(state, action)
+        input_encoded = session.encode(state, action, reward, s_prime)
 
         # Forward pass of the network
         pred_Q = self.model(input_encoded)
 
         # Get Q target of network
-        target_Q = reward + get_maximal_Q(self, s_prime)
+        target_Q = reward + get_maximal_Q(self, s_prime)*self.gamma
 
         # Calculate loss
         loss = self.loss_function(pred_Q, target_Q)
@@ -83,13 +83,12 @@ class QSession:
         loss.backward()
         self.optimizer.step()
 
-        self.train_on_past_values()
+        if(new): self.train_on_past_values()
 
         # Return loss
         return loss
 
-    # This is used to determine max_a'(Q(s',a'))
-    def forward_no_grad(self, state, action):
+    def get_Q(self, state, action):
 
         with torch.no_grad():
             pred_Q = self.model(self.encode(state, action))
@@ -122,7 +121,7 @@ if __name__ == "__main__":
     # Agent will traverse the state space. As it traverses, gets states and actions, and rewards from environement.
     # Run this as many times as you want, exploring different parts of state space
     state, action, reward, s_prime = None, None, None, None
-    session.explore(state, action, reward, s_prime)
+    session.train(state, action, reward, s_prime)
 
     # Save model trained somewhere
     save_path = ""
@@ -132,4 +131,4 @@ if __name__ == "__main__":
     session.load_model(save_path)
 
     # Keep training, or go ahead and actually use by calling forward_no_grad
-    pred_Q = session.forward_no_grad(state, action)
+    pred_Q = session.get_Q(state, action)

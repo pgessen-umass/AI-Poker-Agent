@@ -1,5 +1,6 @@
 import pprint
 import torch
+import numpy as np
 
 class PokerGameEncoder:
     _suit_offset = {'C': 0, 'D': 13, 'H': 26, 'S': 39}
@@ -19,6 +20,7 @@ class PokerGameEncoder:
         self.seats = game_info.get('seats')
         self.prev_our_pot = our_stack
         self.prev_op_pot = op_stack
+        self.op_histories = np.array([0,0,0])
 
     @classmethod
     def card_to_index(cls, card):
@@ -41,6 +43,7 @@ class PokerGameEncoder:
         if new_hole_cards:
             self.hole_cards_vector = self.encode_cards(new_hole_cards)
         self.community_cards_vector = self.encode_cards(new_game_data.get('community_card', []))
+        self.update_op_actions(new_game_data.get('action_histories'))
         
         if new_game_data['round_count'] != self.round_count:
             self.round_count = new_game_data['round_count']
@@ -100,7 +103,47 @@ class PokerGameEncoder:
             'opponent_total_money': torch.tensor([self.opponent_total_money]).to(torch.float32),
             'our_investment_this_round': torch.tensor([self.our_investment]).to(torch.float32),
             'opponent_investment_this_round': torch.tensor([self.opponent_investment]).to(torch.float32),
-        }
+        }, torch.from_numpy(self.op_histories).to(torch.float32)
+    
+    def update_op_actions(self, histories):
+        if "river" in histories and len(histories.get('river')) != 0:
+            last_action = histories.get('river')[-1].get('action')
+            if last_action == "CALL":
+                self.op_histories[1] += 1
+            elif last_action == "RAISE":
+                self.op_histories[2] += 1
+            else:
+                self.op_histories[0] += 1
+            return
+        if "turn" in histories and len(histories.get('turn')) != 0:
+            last_action = histories.get('turn')[-1].get('action')
+            if last_action == "CALL":
+                self.op_histories[1] += 1
+            elif last_action == "RAISE":
+                self.op_histories[2] += 1
+            else:
+                self.op_histories[0] += 1
+            return
+        if "flop" in histories and len(histories.get('flop')) != 0:
+            last_action = histories.get('flop')[-1].get('action')
+            if last_action == "CALL":
+                self.op_histories[1] += 1
+            elif last_action == "RAISE":
+                self.op_histories[2] += 1
+            else:
+                self.op_histories[0] += 1
+            return
+        else:
+            last_action = histories.get('preflop')[-1].get('action')
+            if last_action == "CALL":
+                self.op_histories[1] += 1
+            elif last_action == "RAISE":
+                self.op_histories[2] += 1
+            else:
+                self.op_histories[0] += 1
+        return
+
     
     def get_features_as_tensor(self):
-        return torch.concat(tuple(self.get_features().values()))
+        s, a = self.get_features()
+        return torch.concat(tuple(s.values())), a

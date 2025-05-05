@@ -7,6 +7,7 @@ import numpy as np
 import torch
 from torch import nn
 import torch.nn.functional as F
+from q.game_simulator import GameSimulator
 from collections import deque, namedtuple
 
 class QModel(nn.Module):
@@ -62,7 +63,7 @@ class DeepQModelWrapper:
         self.last_state = None
         self.last_action = None
 
-    def _choose_action(self, state, valid_actions: torch.Tensor):
+    def _choose_action(self, state, valid_actions: torch.Tensor, nonTensorState, round_state, hole_card, op_histories=None):
         """
         Either choose max Q value to pursure or, if exploration is triggered, explore random action
         """
@@ -70,10 +71,14 @@ class DeepQModelWrapper:
             action_distribution = torch.rand(3)
         else:
             action_distribution = self.model(state)
+        call_reward = GameSimulator.simulate_call(state, self.model, nonTensorState, round_state, hole_card, op_histories)
+        print("call rewards:", call_reward)
+        raise_reward = GameSimulator.simulate_raise(state, self.model, nonTensorState, round_state, hole_card, op_histories)
+        print("rais rewards:", raise_reward)
         valid_indices = valid_actions.nonzero(as_tuple=False).squeeze()
         return valid_indices[action_distribution[valid_actions].argmax()].item()
 
-    def register_current_state(self, curr_state, curr_reward, return_action = False, valid_actions: torch.Tensor = None):
+    def register_current_state(self, curr_state, curr_reward, op_histories, nonTensorState, round_state, hole_card, return_action = False, valid_actions: torch.Tensor = None):
         """
         Saves the current state to history and associates it with the last state and action taken.
         All logic that deals with history occurs in this function
@@ -88,7 +93,7 @@ class DeepQModelWrapper:
 
         if self.last_state is None or self.last_action is None:
             self.last_state = curr_state
-            self.last_action = self._choose_action(curr_state, valid_actions)
+            self.last_action = self._choose_action(curr_state, valid_actions, nonTensorState, round_state, hole_card, op_histories)
             return self.last_action if return_action else None
         
         self.history.append(StateTransition(self.last_state, self.last_action, curr_state, curr_reward))
@@ -97,7 +102,7 @@ class DeepQModelWrapper:
             self.dump_history_and_model()
 
         self.last_state = curr_state
-        self.last_action = self._choose_action(curr_state, valid_actions)
+        self.last_action = self._choose_action(curr_state, valid_actions, nonTensorState, round_state, hole_card, op_histories)
         return self.last_action if return_action else None
 
     def dump_history_and_model(self):

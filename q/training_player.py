@@ -37,8 +37,9 @@ class TrainingPlayer(BasePokerPlayer):
         valid_actions_mask = get_valid_actions_mask(valid_actions)
         self.classencoder.update(round_state, hole_card)
 
-        s = self.classencoder.get_features_as_tensor()
-        next_action = self.model_wrapper.register_current_state(s, 0, return_action=True, valid_actions=valid_actions_mask)
+        s, op_histories = self.classencoder.get_features_as_tensor()
+        s1, _ = self.classencoder.get_features()
+        next_action = self.model_wrapper.register_current_state(s, 0, op_histories, s1, round_state, hole_card, return_action=True, valid_actions=valid_actions_mask)
 
         self.model_wrapper.optimize()
 
@@ -80,8 +81,10 @@ class TrainingPlayer(BasePokerPlayer):
 
     def receive_round_result_message(self, winners, hand_info, round_state):
         if(self.verbose): print(f"Round {self.round_count} ended")
+        print("hand info:", hand_info)
         self.classencoder.update(round_state)
-        s = self.classencoder.get_features_as_tensor()
+        s, op_histories = self.classencoder.get_features_as_tensor()
+        s1, _ = self.classencoder.get_features()
         
         if(len(winners) != 1):
             # Tie occured
@@ -92,4 +95,4 @@ class TrainingPlayer(BasePokerPlayer):
             sign = 1 if won else -1
             reward = sign*round_state['pot']['main']['amount']
         
-        self.model_wrapper.register_current_state(s,reward)
+        self.model_wrapper.register_current_state(s,reward,op_histories,s1,round_state,None)

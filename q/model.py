@@ -12,14 +12,14 @@ from collections import deque, namedtuple
 
 class QModel(nn.Module):
 
-    def __init__(self):
+    def __init__(self, hidden_layer_size):
         super().__init__()
         self.network = nn.Sequential(
-            nn.Linear(108, 128),
+            nn.Linear(108, hidden_layer_size),
             nn.ReLU(),
-            nn.Linear(128, 128),
+            nn.Linear(hidden_layer_size, hidden_layer_size),
             nn.ReLU(),
-            nn.Linear(128, 3)
+            nn.Linear(hidden_layer_size, 3)
         )
 
     def forward(self, x):
@@ -108,21 +108,18 @@ class DeepQModelWrapper:
         self.history.append(StateTransition(self.last_state, self.last_action, curr_state, curr_reward))
 
         if(self.dump_freq is not None and self.states_encountered % self.dump_freq == 0):
-            self.dump_history_and_model()
+            self.dump_model()
 
         self.last_state = curr_state
         self.last_action = self._choose_action(curr_state, valid_actions, nonTensorState, round_state, hole_card, op_histories)
         return self.last_action if return_action else None
 
-    def dump_history_and_model(self):
+    def dump_model(self):
         """
         Saves current history and model state to file for replay later
         """
         os.makedirs(self.dump_folderpath, exist_ok=True)
         ts = time.strftime("%Y%m%d-%H%M%S")
-        hist_path = os.path.join(self.dump_folderpath, f"history-{ts}.pkl")
-        with open(hist_path, "wb") as f:
-            pickle.dump(list(self.history), f)
         model_path = os.path.join(self.dump_folderpath, f"model-{ts}.pt")
         torch.save(self.model.state_dict(), model_path)
 

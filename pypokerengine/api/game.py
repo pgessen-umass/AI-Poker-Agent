@@ -13,8 +13,8 @@ def start_poker(config, verbose=2):
     for info in config.players_info:
         dealer.register_player(info["name"], info["algorithm"])
         # print(info["algorithm"].declare_action)
-    result_message = dealer.start_game(config.max_round)
-    return _format_result(result_message)
+    result_message, rounds_played = dealer.start_game(config.max_round)
+    return _format_result(result_message), rounds_played
 
 def _format_result(result_message):
     return {
@@ -39,7 +39,7 @@ class Config(object):
 
         # Wrap the function with a timeout
         default_action_info      = "fold"
-        algorithm.declare_action = timeout2(0.1,default_action_info)(algorithm.declare_action)
+        # algorithm.declare_action = timeout2(0.1,default_action_info)(algorithm.declare_action)
         info = { "name" : name, "algorithm" : algorithm }
         self.players_info.append(info)
 

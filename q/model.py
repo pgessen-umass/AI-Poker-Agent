@@ -39,29 +39,36 @@ class StateTransition:
     
 class DeepQModelWrapper:
     
-    def __init__(self, model: QModel, discount_factor: float, exploration_factor: float, dump_folderpath: str, target_update_frequency: int, dump_freq: int = None):
-        assert exploration_factor >= 0 and exploration_factor <= 1, "Exploration factor must be between 0 and 1"
+    def __init__(self, model: QModel, discount_factor: float = None, exploration_factor: float = None, dump_folderpath: str = None, target_update_frequency: int = None, dump_freq: int = None):
 
         self.activated = False
-        self.history = deque(maxlen=10000)
         self.model = model
-        self.target_model = copy.deepcopy(self.model)
 
-        self.optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
-        self.discount_factor = discount_factor
-        self.exploration_factor = exploration_factor
-        self.dump_folderpath = dump_folderpath
-        self.dump_freq = dump_freq
-        self.target_update_frequency = target_update_frequency
-        
-        self.states_encountered = 0
+        # The following is only relevant for the training stage
+        if(discount_factor is not None):
+            assert exploration_factor >= 0 and exploration_factor <= 1, "Exploration factor must be between 0 and 1"
+            self.history = deque(maxlen=10000)
+            self.target_model = copy.deepcopy(self.model)
+            self.optimizer = torch.optim.AdamW(model.parameters(), lr=0.01)
+            self.discount_factor = discount_factor
+            self.exploration_factor = exploration_factor
+            self.dump_folderpath = dump_folderpath
+            self.dump_freq = dump_freq
+            self.target_update_frequency = target_update_frequency
+            
+            self.states_encountered = 0
 
-        self.last_state = None
-        self.last_action = None
+            self.last_state = None
+            self.last_action = None
 
     def new_round(self):
         self.last_state = None
         self.last_action = None
+
+    def deployed_choose_action(self, state, valid_actions):
+        action_distribution = self.model(state)
+        valid_indices = valid_actions.nonzero(as_tuple=False).squeeze()
+        return valid_indices[action_distribution[valid_actions].argmax()].item()
 
     def _choose_action(self, state, valid_actions: torch.Tensor, nonTensorState, round_state, hole_card, op_histories=None):
         """
@@ -72,9 +79,11 @@ class DeepQModelWrapper:
         else:
             action_distribution = self.model(state)
         call_reward = GameSimulator.simulate_call(state, self.model, nonTensorState, round_state, hole_card, op_histories)
-        print("call rewards:", call_reward)
+        # print("call rewards:", call_reward)
         raise_reward = GameSimulator.simulate_raise(state, self.model, nonTensorState, round_state, hole_card, op_histories)
-        print("rais rewards:", raise_reward)
+        # print("rais rewards:", raise_reward)
+        action_distribution[0] += raise_reward.item()
+        action_distribution[1] += call_reward.item()
         valid_indices = valid_actions.nonzero(as_tuple=False).squeeze()
         return valid_indices[action_distribution[valid_actions].argmax()].item()
 

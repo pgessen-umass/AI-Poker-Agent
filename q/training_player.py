@@ -23,13 +23,14 @@ def get_valid_actions_mask(valid_actions):
         out[action_to_int[a['action']]] = True
     return out
 
-class TrainingPlayer(BasePokerPlayer):
+class QPlayer(BasePokerPlayer):
 
-    def __init__(self, model_wrapper: DeepQModelWrapper, verbose = False):
+    def __init__(self, model_wrapper: DeepQModelWrapper, training=False, verbose = False):
         super().__init__()
         
         self.classencoder = None
         self.model_wrapper = model_wrapper
+        self.training = training
         self.verbose = verbose
         self.round_count = 0
         
@@ -39,9 +40,12 @@ class TrainingPlayer(BasePokerPlayer):
 
         s, op_histories = self.classencoder.get_features_as_tensor()
         s1, _ = self.classencoder.get_features()
-        next_action = self.model_wrapper.register_current_state(s, 0, op_histories, s1, round_state, hole_card, return_action=True, valid_actions=valid_actions_mask)
 
-        self.model_wrapper.optimize()
+        if(self.training): 
+            next_action = self.model_wrapper.register_current_state(s, 0, op_histories, s1, round_state, hole_card, return_action=True, valid_actions=valid_actions_mask)
+            self.model_wrapper.optimize()
+        else:
+            next_action = self.model_wrapper.deployed_choose_action(s, valid_actions_mask)
 
         for i in valid_actions:
             if i["action"] == int_to_action[next_action]:
@@ -81,7 +85,7 @@ class TrainingPlayer(BasePokerPlayer):
 
     def receive_round_result_message(self, winners, hand_info, round_state):
         if(self.verbose): print(f"Round {self.round_count} ended")
-        print("hand info:", hand_info)
+        # print("hand info:", hand_info)
         self.classencoder.update(round_state)
         s, op_histories = self.classencoder.get_features_as_tensor()
         s1, _ = self.classencoder.get_features()
@@ -95,4 +99,4 @@ class TrainingPlayer(BasePokerPlayer):
             sign = 1 if won else -1
             reward = sign*round_state['pot']['main']['amount']
         
-        self.model_wrapper.register_current_state(s,reward,op_histories,s1,round_state,None)
+        if(self.training): self.model_wrapper.register_current_state(s,reward,op_histories,s1,round_state,None)

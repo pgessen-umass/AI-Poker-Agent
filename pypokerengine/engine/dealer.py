@@ -18,6 +18,7 @@ class Dealer:
     self.message_summarizer = MessageSummarizer(verbose=0)
     self.table = Table()
     self.blind_structure = {}
+    
 
   def register_player(self, player_name, algorithm):
     self.__config_check()
@@ -30,6 +31,7 @@ class Dealer:
 
   def start_game(self, max_round):
     table = self.table
+    rounds_played = 0
     self.__notify_game_start(max_round)
     ante, sb_amount = self.ante, self.small_blind_amount
     for round_count in range(1, max_round+1):
@@ -38,7 +40,8 @@ class Dealer:
       if self.__is_game_finished(table): break
       table = self.play_round(round_count, sb_amount, ante, table)
       table.shift_dealer_btn()
-    return self.__generate_game_result(max_round, table.seats)
+      rounds_played += 1
+    return self.__generate_game_result(max_round, rounds_played, table.seats)
   
   def play_round(self, round_count, blind_amount, ante, table):
     state, msgs = RoundManager.start_new_round(round_count, blind_amount, ante, table)
@@ -142,11 +145,11 @@ class Dealer:
     for player in no_money_players:
       player.pay_info.update_to_fold()
 
-  def __generate_game_result(self, max_round, seats):
+  def __generate_game_result(self, max_round, rounds_played, seats):
     config = self.__gen_config(max_round)
     result_message = MessageBuilder.build_game_result_message(config, seats)
     self.message_summarizer.summarize(result_message)
-    return result_message
+    return result_message, rounds_played
 
   def __gen_config(self, max_round):
     return {

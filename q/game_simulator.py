@@ -11,7 +11,7 @@ class GameSimulator:
             hole_cards = [Card.from_str(card) for card in hole_cards]
         community_cards = [Card.from_str(card) for card in round_state.get("community_card")]
         state_copy = copy.deepcopy(nonTensorState)
-        print("state:", round_state)
+        # print("state:", round_state)
         simulated_rewards = 0
         if op_histories is None:
             return simulated_rewards * (card_utils.estimate_hole_card_win_rate(10,2, hole_cards, community_cards) if hole_cards is not None else 0.5)

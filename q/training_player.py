@@ -1,4 +1,5 @@
 import pprint
+from time import perf_counter
 from q.game_encoder import PokerGameEncoder
 from q.model import DeepQModelWrapper, QModel
 from pypokerengine.players import BasePokerPlayer
@@ -35,6 +36,7 @@ class QPlayer(BasePokerPlayer):
         self.round_count = 0
         
     def declare_action(self, valid_actions, hole_card, round_state):
+        # start = perf_counter()
         valid_actions_mask = get_valid_actions_mask(valid_actions)
         self.classencoder.update(round_state, hole_card)
 
@@ -45,11 +47,13 @@ class QPlayer(BasePokerPlayer):
             next_action = self.model_wrapper.register_current_state(s, 0, op_histories, s1, round_state, hole_card, return_action=True, valid_actions=valid_actions_mask)
             self.model_wrapper.optimize()
         else:
-            next_action = self.model_wrapper.deployed_choose_action(s, valid_actions_mask)
+            next_action = self.model_wrapper.deployed_choose_action(s, 0, op_histories, s1, round_state, hole_card, return_action=True, valid_actions=valid_actions_mask)
 
         for i in valid_actions:
             if i["action"] == int_to_action[next_action]:
                 action = i["action"]
+                # end = perf_counter()
+                # print(end-start)
                 return action  # action returned here is sent to the poker engine
         
         assert False, f"Action chosen is not a valid action! Chosen: {next_action}. Available: {valid_actions}. Mask: {valid_actions_mask}"
@@ -99,4 +103,4 @@ class QPlayer(BasePokerPlayer):
             sign = 1 if won else -1
             reward = sign*round_state['pot']['main']['amount']
         
-        if(self.training): self.model_wrapper.register_current_state(s,reward,op_histories,s1,round_state,None)
+        if(self.training): self.model_wrapper.register_current_state(s,reward/1000,op_histories,s1,round_state,None)

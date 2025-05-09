@@ -1,3 +1,4 @@
+from model_evaluator import Evaluator
 from pypokerengine.engine.dealer import Dealer
 from pypokerengine.players import BasePokerPlayer
 from pypokerengine.utils.timeout_decorator import timeout2
@@ -32,7 +33,7 @@ class Config(object):
         self.sb_amount = sb_amount
         self.ante = ante
 
-    def register_player(self, name, algorithm):
+    def register_player(self, name, algorithm: BasePokerPlayer):
         if not isinstance(algorithm, BasePokerPlayer):
             base_msg = 'Poker player must be child class of "BasePokerPlayer". But its parent was "%s"'
             raise TypeError(base_msg % algorithm.__class__.__bases__)

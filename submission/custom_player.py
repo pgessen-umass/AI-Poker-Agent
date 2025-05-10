@@ -614,24 +614,25 @@ def singleton(cls):
         return instances[cls]
     return get_instance
 
-def loadModel(folder):
+# def loadModel(folder):
 
-    with open(f"{folder}/metadata.txt","r") as f:
-        hidden_layer_size, number_of_hidden_layers = list(map(int,f.read().split(",")))
+#     with open(f"{folder}/metadata.txt","r") as f:
+#         hidden_layer_size, number_of_hidden_layers = list(map(int,f.read().split(",")))
     
-    model = QModel(hidden_layer_size, number_of_hidden_layers)
-    models_available = [f for f in os.listdir(folder) if f.endswith('.pt')]
-    if(len(models_available) != 1): raise ValueError(f"Bad folder structure: {folder}")
-    state_dict = torch.load(f"{folder}/{models_available[0]}")
-    model.load_state_dict(state_dict)
+#     model = QModel(hidden_layer_size, number_of_hidden_layers)
+#     models_available = [f for f in os.listdir(folder) if f.endswith('.pt')]
+#     if(len(models_available) != 1): raise ValueError(f"Bad folder structure: {folder}")
+#     state_dict = torch.load(f"{folder}/{models_available[0]}")
+#     model.load_state_dict(state_dict)
 
-    return model
+#     return model
 
 @singleton
 class PlayerTools:
 
     def __init__(self):
-        self.model = loadModel("./best_model")
+        # self.model = loadModel("./best_model")
+        self.model = get_model_from_weights(get_inline_weights())
         self.model_wrapper = DeepQModelWrapper(self.model)
         self.classencoder = None
 

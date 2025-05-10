@@ -2,6 +2,7 @@ import json
 import os
 import time
 from matplotlib import pyplot as plt
+import numpy as np
 
 class Evaluator:
 
@@ -16,11 +17,11 @@ class Evaluator:
         self.player_wins[name] = []
         print(self.player_wins)
 
-    def register_win(self, name):
+    def register_win(self, name, toConsole=False):
         self.game_number += 1
         self.player_wins[name].append(self.game_number)
         self.dump()
-        print(self.player_wins)
+        if(toConsole): print(self.player_wins)
 
     def dump(self):
         os.makedirs(self.dumpfolder, exist_ok=True)
@@ -55,6 +56,9 @@ class Evaluator:
         plt.title("Wins vs. Games Played")
         plt.plot(games, p1_wins, label=p1_name)
         plt.plot(games, p2_wins, label=p2_name)
+        plt.fill_between(games,p1_wins,p2_wins,interpolate=True, alpha=0.3)
+        plt.plot(games, np.abs(np.array(p2_wins) - np.array(p1_wins)), label="Abs Win Diff")
+        plt.fill_between(games,np.zeros(len(p2_wins)),np.abs(np.array(p2_wins) - np.array(p1_wins)),interpolate=True, alpha=0.3, color='green')
         plt.ylabel("Wins")
         plt.xlabel("Games Played")
         plt.legend()
@@ -62,7 +66,8 @@ class Evaluator:
         if(show): plt.show()
 
     @staticmethod
-    def plot_file(filepath, show=True):
-        with open(filepath,"r") as f:
+    def plot_file(folder,file =None, show=True):
+        if(file is None): file = os.listdir(folder)[-1]
+        with open(f'{folder}/{file}',"r") as f:
             player_wins = json.load(f)
         Evaluator._create_plots(player_wins, show)

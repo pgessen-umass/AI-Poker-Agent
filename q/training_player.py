@@ -1,4 +1,3 @@
-import pprint
 from time import perf_counter
 from q.game_encoder import PokerGameEncoder
 from q.model import DeepQModelWrapper, QModel

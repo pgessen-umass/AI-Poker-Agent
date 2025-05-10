@@ -7,7 +7,7 @@ class PokerGameEncoder:
     _rank_value = {'2':0, '3':1, '4':2, '5':3, '6':4, '7':5, '8':6, '9':7, 'T':8, 'J':9, 'Q':10, 'K':11, 'A':12}
     _pre_rounds = {'river': 'turn', 'turn': 'flop', 'flop': 'preflop'}
 
-    def __init__(self, our_uuid, our_stack, op_uuid, op_stack, game_info):
+    def __init__(self, our_uuid, our_stack, op_uuid, op_stack, seats):
         self.our_uuid = our_uuid
         self.opponent_uuid = op_uuid
         self.hole_cards_vector = torch.zeros(52, dtype=torch.float32)
@@ -17,7 +17,7 @@ class PokerGameEncoder:
         self.our_investment = 0
         self.opponent_investment = 0
         self.round_count = 1
-        self.seats = game_info.get('seats')
+        self.seats = seats
         self.prev_our_pot = our_stack
         self.prev_op_pot = op_stack
         self.op_histories = np.array([0,0,0])

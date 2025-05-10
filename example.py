@@ -11,6 +11,7 @@ from q.model import DeepQModelWrapper, QModel
 from q.training_player import QPlayer
 from raise_player import RaisedPlayer
 from randomplayer import RandomPlayer
+from submission.custom_player import setup_ai
 
 def getLatestModel(folder, hidden_layer_dimensions=256, num_hidden_layers=3):
     if(os.path.exists(folder)):
@@ -54,52 +55,56 @@ def get_player_who_won(players):
     if(p1["stack"] > p2["stack"]): return PLAYER_ONE_NAME
     return PLAYER_TWO_NAME
 
-# g = 50
-# i=0
+g = 1000
+i=0
 m1History = None
 m2History = None
 history1saved = False
 history2saved = False
-while True:
+while i<g:
+    i+=1
     config = setup_config(max_round=200, initial_stack=1000, small_blind_amount=10)
 
-    model1 = getLatestModel("model_1_clean", 256,2)
-    wrapper1 = DeepQModelWrapper(model1, 0.9, 0.2, "model_1_clean", 100, 100000, learning_rate=1e-3, history=m1History)
-    p1 = QPlayer(wrapper1, training=True, verbose=False)
+    model1 = getLatestModel("ub_model_1", 256,2)
+    wrapper1 = DeepQModelWrapper(model1, 0.9, 0.2, "ub_model_1", 100, 100000, learning_rate=1e-3, history=m1History)
+    p1 = QPlayer(wrapper1, training=False, verbose=False)
     config.register_player(name=PLAYER_ONE_NAME, algorithm=p1)
 
-    model2 = getLatestModel("model_2_clean", 256,3)
-    wrapper2 = DeepQModelWrapper(model2, 0.9, 0.2, "model_2_clean", 100, 100000, learning_rate=1e-7, history=m1History)
-    p2 = QPlayer(wrapper2, training=True, verbose=False)
-    config.register_player(name=PLAYER_TWO_NAME, algorithm=p2)
+    # model2 = getLatestModel("ub_model_2", 256,3)
+    # wrapper2 = DeepQModelWrapper(model2, 0.9, 0.2, "ub_model_2", 100, 100000, learning_rate=1e-7, history=m1History)
+    # p2 = QPlayer(wrapper2, training=False, verbose=False)
+    # config.register_player(name=PLAYER_TWO_NAME, algorithm=p2)
 
     # p3 = RaisedPlayer()
     # config.register_player(name=PLAYER_ONE_NAME, algorithm=p3)
     # p4 = RaisedPlayer()
     # config.register_player(name=PLAYER_TWO_NAME, algorithm=p4)
 
+    p5 = setup_ai()
+    config.register_player(name=PLAYER_TWO_NAME, algorithm=p5)
+
     game_result, rounds_played = start_poker(config, verbose=0)
 
     winner = get_player_who_won(game_result['players'])
-    eval.register_win(winner)
+    eval.register_win(winner, toConsole=True)
 
-    m1History = wrapper1.history
-    m2History = wrapper2.history
+    # m1History = wrapper1.history
+    # m2History = wrapper2.history
 
-    if(not history1saved and len(m1History) == 20000):
-        wrapper1.dump(history=True)
-        history1saved = True
-    else:
-        wrapper1.dump()
+    # if(not history1saved and len(m1History) == 20000):
+    #     wrapper1.dump(history=True)
+    #     history1saved = True
+    # else:
+    #     wrapper1.dump()
     
-    if(not history2saved and len(m2History) == 20000):
-        wrapper2.dump(history=True)
-        history2saved = True
-    else:
-        wrapper2.dump()
+    # if(not history2saved and len(m2History) == 20000):
+    #     wrapper2.dump(history=True)
+    #     history2saved = True
+    # else:
+    #     wrapper2.dump()
 
-    cleanUpFolder("model_1_clean")
-    cleanUpFolder("model_2_clean")
+    # cleanUpFolder("model_1_clean")
+    # cleanUpFolder("model_2_clean")
     # cleanUpFolder("model_3")
 
     # pprint.pprint(game_result)
@@ -130,4 +135,4 @@ while True:
 # plt.show()
 
 # plt.subplot(1,2,2)
-Evaluator.plot_file('q_against_q/adversarial_win_ratio-20250509-010744.json')
+Evaluator.plot_file('q_against_q')

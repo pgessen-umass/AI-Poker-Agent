@@ -1,5 +1,5 @@
 from pypokerengine.players import BasePokerPlayer
-from submission.setup_handler import PlayerTools
+from setup_handler import PlayerTools
 
 class CustomPlayer(BasePokerPlayer):
 

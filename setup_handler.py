@@ -46,7 +46,7 @@ def loadModel(folder):
 class PlayerTools:
 
     def __init__(self):
-        self.model = loadModel("./submission/best_model")
+        self.model = loadModel("./best_model")
         self.model_wrapper = DeepQModelWrapper(self.model)
         self.classencoder = None
 

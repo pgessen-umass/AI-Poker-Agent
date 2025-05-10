@@ -11,7 +11,7 @@ from q.model import DeepQModelWrapper, QModel
 from q.training_player import QPlayer
 from raise_player import RaisedPlayer
 from randomplayer import RandomPlayer
-from submission.custom_player import setup_ai
+from custom_player import setup_ai
 
 def getLatestModel(folder, hidden_layer_dimensions=256, num_hidden_layers=3):
     if(os.path.exists(folder)):
